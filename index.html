@@ -290,7 +290,7 @@
       return;
     }
     $('aviso').classList.add('oculto');
-    rep = calcular(s);    alert('X=' + rep.X + ' Y=' + rep.Y);
+    rep = calcular(s);
     if (rep.si) {
       const validos = new Set(rep.listL);
       marcados = new Set([...marcados].filter(i => validos.has(i)));
