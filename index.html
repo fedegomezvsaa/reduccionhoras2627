@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reducción de horas no lectivas</title>
+<style>
+  body{font-family:Arial,Helvetica,sans-serif;background:#f4f6fa;color:#222;margin:0}
+  .wrap{max-width:820px;margin:0 auto;padding:20px}
+  h1{color:#1a4d8f;font-size:22px}
+  h2{color:#1a4d8f;font-size:18px;margin-top:28px}
+  .preg{background:#fff;border-radius:8px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+  .preg>label{display:block;font-weight:bold;margin-bottom:8px}
+  select{font-size:15px;padding:6px 8px;min-width:200px}
+  .selH{font-size:14px;padding:2px 4px;min-width:0;margin-left:6px}
+  .checks{display:flex;flex-wrap:wrap;gap:6px 18px}
+  .checks label{font-weight:normal}
+  .btn{background:#1a4d8f;color:#fff;border:0;border-radius:6px;padding:10px 16px;font-size:15px;cursor:pointer;margin:6px 8px 6px 0}
+  .btn.sec{background:#fff;color:#1a4d8f;border:1px solid #1a4d8f}
+  .btn:disabled{opacity:.6;cursor:wait}
+  .oculto{display:none}
+  .aviso{margin:10px 0;padding:10px 14px;border-radius:6px;background:#fdecea;color:#a12622}
+  .aviso.ok{background:#e6f4ea;color:#1e6b34}
+  #informeTexto{background:#fff;border-radius:8px;padding:6px 18px 14px;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+  #informeTexto ul{padding-left:20px}
+  .lista-check{list-style:none;padding-left:0!important}
+  .lista-check li{margin:3px 0}
+  .botones{margin-top:14px}
+  .tot-ok{color:#1e6b34;font-weight:bold}
+  .tot-warn{color:#a12622;font-weight:bold}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Reducción de horas no lectivas</h1>
+
+  <div class="preg">
+    <label for="p1">1. ¿Tu jornada es incompleta por cuidado de personas (hijos o familiares al cargo)?</label>
+    <select id="p1">
+      <option value="">-</option>
+      <option value="SI">Sí</option>
+      <option value="NO">No</option>
+    </select>
+  </div>
+
+  <div class="preg">
+    <label for="p2">2. ¿Cuántas horas tiene tu jornada reducida?</label>
+    <select id="p2">
+      <option value="">-</option>
+      <option>12</option><option>13</option><option>14</option><option>15</option><option>16</option>
+      <option>17</option><option>18</option><option>19</option><option>20</option><option>21</option>
+    </select>
+  </div>
+
+  <div id="extra" class="oculto">
+    <div class="preg">
+      <label>3. ¿En qué cursos das clase?</label>
+      <div class="checks" id="p3">
+        <label><input type="checkbox" value="1ESO"> 1ro ESO</label>
+        <label><input type="checkbox" value="2ESO"> 2do ESO</label>
+        <label><input type="checkbox" value="3ESO"> 3ro ESO</label>
+        <label><input type="checkbox" value="4ESO"> 4to ESO</label>
+        <label><input type="checkbox" value="1BACH"> 1ro BACH</label>
+        <label><input type="checkbox" value="2BACH"> 2do BACH</label>
+      </div>
+    </div>
+    <div class="preg">
+      <label for="p4">4. ¿Eres tutor?</label>
+      <select id="p4">
+        <option value="">-</option>
+        <option value="ESO">Sí, en ESO</option>
+        <option value="BACH">Sí, en BACH</option>
+        <option value="NO">No</option>
+      </select>
+    </div>
+  </div>
+
+  <button id="btnGenerar" class="btn">Generar informe o correo de reducción de horas no lectivas</button>
+  <div id="aviso" class="aviso oculto"></div>
+
+  <div id="informe" class="oculto">
+    <h2>INFORME o CORREO</h2>
+    <div id="informeTexto"></div>
+    <div class="botones">
+      <button id="btnPdf" class="btn sec">Descargar en PDF</button>
+      <button id="btnCopiar" class="btn sec oculto">Copiar texto para correo electrónico a dirección</button>
+      <button id="btnReiniciar" class="btn sec">Empezar de nuevo</button>
+    </div>
+    <div id="avisoCopia" class="aviso ok oculto">Borrador del correo copiado en el portapapeles</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+  // red: true | false | [valores de P4 en los que SÍ es reducible] (valores: 'NO','ESO','BACH')
+  // at: 'todos' | 'nadie' | {cursos:[...]} | {tutor:[...]}
+  // sel: true -> el usuario elige cuántas horas reducir (desplegable 0..h)
+  const ESO1 = ['1ESO', '2ESO'], ESO2 = ['3ESO', '4ESO'], BACH = ['1BACH', '2BACH'];
+
+  const CONCEPTOS = [
+    { n: 'GUÀRDIES (2hx37 setmanes)', h: 74, red: true, at: 'todos' },
+    { n: '1 SETEMBRE', h: 6, red: true, at: 'nadie' },
+    { n: '2 AL 8 SETEMBRE (4hx5 dies)', h: 20, red: true, at: 'nadie', sel: true },
+    { n: 'Situacions personals ESO1 (16-IX-26)', h: 3, red: false, at: { cursos: ESO1 } },
+    { n: 'Situacions personals ESO2 (23-IX-26)', h: 3, red: false, at: { cursos: ESO2 } },
+    { n: 'Situacions personals BACH (24-IX-26)', h: 3, red: false, at: { cursos: BACH } },
+    { n: 'Reunió famílies (17-IX-26)', h: 2, red: false, at: { tutor: ['ESO', 'BACH'] } },
+    { n: 'Claustre departaments 14-X-25', h: 2, red: true, at: 'nadie' },
+    { n: 'Cl. Av. Inicial (28-X-26)', h: 3, red: false, at: 'todos' },
+    { n: 'Claustre formació 4-XI-25', h: 2, red: true, at: 'nadie' },
+    { n: 'Claustre general 18-XI-25', h: 2, red: true, at: 'nadie' },
+    { n: '1a Av. BACH (2-XII-26)', h: 3, red: false, at: { cursos: BACH } },
+    { n: '1a Av. ESO1 (11-XII-26)', h: 3, red: false, at: { cursos: ESO1 } },
+    { n: '1a Av. ESO2 (9-XII-26)', h: 3, red: false, at: { cursos: ESO2 } },
+    { n: 'Reunió famílies 1a Av. BACH (3-XII-26)', h: 2, red: false, at: { tutor: ['BACH'] } },
+    { n: 'Reunió famílies 1a Av. ESO (15-XII-26)', h: 2, red: false, at: { tutor: ['ESO'] } },
+    { n: 'Claustre general (tots) (13-I-27)', h: 2, red: true, at: 'nadie' },
+    { n: 'Claustre departaments 27-I-27', h: 2, red: true, at: 'nadie' },
+    { n: 'Situacions personals (tots) (3-II-27)', h: 3, red: false, at: 'todos' },
+    { n: 'Claustre (17-II-27)', h: 2, red: true, at: 'nadie' },
+    { n: '2a Av. BACH (3-III-27)', h: 3, red: false, at: { cursos: BACH } },
+    { n: '2a Av. ESO2 (5-III-27)', h: 3, red: false, at: { cursos: ESO2 } },
+    { n: '2a Av. ESO1 (10-III-27)', h: 3, red: false, at: { cursos: ESO1 } },
+    { n: 'Reunió famílies 2a Av BACH (9-III-27)', h: 2, red: false, at: { tutor: ['BACH'] } },
+    { n: 'Reunió famílies 2a Av ESO (11-III-27)', h: 2, red: false, at: { tutor: ['ESO'] } },
+    { n: 'Claustre general 7-IV-27', h: 2, red: true, at: 'nadie' },
+    { n: 'Claustre departaments 28-IV-27', h: 2, red: true, at: 'nadie' },
+    { n: 'Claustre org. final de curs 19-V-27', h: 2, red: true, at: 'nadie' },
+    { n: 'Av. final 2nBACH 26-V-27', h: 3, red: false, at: { cursos: ['2BACH'] } },
+    { n: 'Av. final 4tESO 9-VI-27', h: 2, red: false, at: { cursos: ['4ESO'] } },
+    { n: 'Av. final 3rESO 15-VI-27', h: 2, red: false, at: { cursos: ['3ESO'] } },
+    { n: 'Av. final ESO1 i 1rBACH 16-VI-27', h: 2, red: false, at: { cursos: ['1ESO', '2ESO', '1BACH'] } },
+    { n: '21 de juny al 2 de juliol (4hx10 dies)', h: 40, red: true, at: 'nadie', sel: true },
+    { n: 'Hores extra per formació i altres necessitats', h: 6, red: true, at: 'todos' }
+  ];
+
+  const $ = id => document.getElementById(id);
+  const fmt = n => Number(n).toLocaleString('es-ES', { maximumFractionDigits: 2 });
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  let generado = false;
+  let rep = null;
+  let marcados = new Set();
+  let horasSel = {}; // índice -> horas elegidas (solo conceptos con sel)
+
+  const horasDe = i => CONCEPTOS[i].sel ? (horasSel[i] || 0) : CONCEPTOS[i].h;
+
+  function estado() {
+    return {
+      p1: $('p1').value,
+      p2: $('p2').value,
+      cursos: [...document.querySelectorAll('#p3 input:checked')].map(i => i.value),
+      tutor: $('p4').value
+    };
+  }
+
+  function esReducible(c, s) { return Array.isArray(c.red) ? c.red.includes(s.tutor) : c.red; }
+  function asiste(c, s) {
+    const a = c.at;
+    if (a === 'todos') return true;
+    if (a === 'nadie') return false;
+    if (a.cursos) return a.cursos.some(x => s.cursos.includes(x));
+    if (a.tutor) return a.tutor.includes(s.tutor);
+    return false;
+  }
+
+  function actualizarVisibilidad() {
+    $('extra').classList.toggle('oculto', $('p1').value !== 'SI');
+  }
+
+  function marcarCambio() {
+    if (generado) $('btnGenerar').textContent = 'Actualizar información para informe o correo';
+  }
+
+  function validar(s) {
+    if (!s.p1) return 'Por favor, responde a la pregunta 1 (no puede quedar en "-").';
+    if (!s.p2) return 'Por favor, responde a la pregunta 2 (no puede quedar en "-").';
+    if (s.p1 === 'SI') {
+      if (!s.cursos.length) return 'Por favor, responde a la pregunta 3 (marca al menos un curso).';
+      if (!s.tutor) return 'Por favor, responde a la pregunta 4 (no puede quedar en "-").';
+    }
+    return null;
+  }
+
+  function calcular(s) {
+    const h = Number(s.p2);
+    const r = {
+      Z: h,
+      X: 330 - 330 * h / 25,
+      Y: 216 - 216 * h / 25,
+      si: s.p1 === 'SI', J: 0, K: 0, L: 0, listJ: [], listK: [], listL: []
+    };
+    if (r.si) {
+      CONCEPTOS.forEach((c, i) => {
+        if (asiste(c, s)) { r.J += c.h; r.listJ.push(i); }
+        else if (!esReducible(c, s)) { r.K += c.h; r.listK.push(i); }
+        else { r.L += c.h; r.listL.push(i); }
+      });
+      r.N = r.Y - r.K;
+    }
+    return r;
+  }
+
+  const li = i => '<li>' + esc(CONCEPTOS[i].n) + ' — ' + CONCEPTOS[i].h + ' h</li>';
+
+  function sumaMarcados() {
+    let m = 0;
+    rep.listL.forEach(i => { if (marcados.has(i)) m += horasDe(i); });
+    return m;
+  }
+
+  function pintarTotal() {
+    const m = sumaMarcados();
+    const el = $('totalM');
+    if (!el) return;
+    el.textContent = fmt(m);
+    el.className = Math.abs(m - rep.N) < 1e-9 ? 'tot-ok' : 'tot-warn';
+  }
+
+  function pintarInforme() {
+    let h = '';
+    h += '<p>De las 330 horas no lectivas, por tu jornada, te corresponde una reducción de <b>' + fmt(rep.X) +
+         '</b> horas. De esas horas, <b>' + fmt(rep.Y) + '</b> son horas a reducir de las 216 horas de claustros, ' +
+         'formaciones y reuniones; el resto se reducen de preparación y corrección de exámenes.</p>';
+
+    if (!rep.si) {
+      h += '<p>La dirección te hará una propuesta de los conceptos con los que se reducirá tu jornada.</p>';
+    } else {
+      h += '<p>Debes responder a la propuesta que te haga dirección aceptándola, o bien, haciéndole una propuesta alternativa.</p>';
+      h += '<p>Conceptos y horas en los que <b>NO PUEDES APLICAR TU REDUCCIÓN</b> en ningún caso y debes asistir, <b>' + fmt(rep.J) + '</b> horas:</p><ul>' +
+           (rep.listJ.map(li).join('') || '<li>Ninguno</li>') + '</ul>';
+      h += '<p>Conceptos y horas en los que <b>APLICAS TU REDUCCIÓN INEVITABLEMENTE</b> y debes no asistir, <b>' + fmt(rep.K) + '</b> horas:</p><ul>' +
+           (rep.listK.map(li).join('') || '<li>Ninguno</li>') + '</ul>';
+      h += '<p>Conceptos y horas sobre los que puedes <b>ELEGIR APLICAR TU REDUCCIÓN</b>:</p><ul class="lista-check">' +
+           rep.listL.map(i => {
+             const c = CONCEPTOS[i];
+             let s = '';
+             if (c.sel) {
+               let o = '';
+               for (let k = 0; k <= c.h; k++) o += '<option value="' + k + '"' + ((horasSel[i] || 0) === k ? ' selected' : '') + '>' + k + '</option>';
+               s = ' <select class="selH" data-i="' + i + '" aria-label="Horas a reducir en ' + esc(c.n) + '">' + o + '</select> h a reducir';
+             }
+             return '<li><label><input type="checkbox" class="chkL" data-i="' + i + '"' +
+               (marcados.has(i) ? ' checked' : '') + '> ' + esc(c.n) + ' — ' + c.h + ' h</label>' + s + '</li>';
+           }).join('') + '</ul>';
+      h += '<p>Puedes reducirte <b>' + fmt(rep.N) + '</b> horas de estos conceptos. Con los conceptos que has marcado suman <span id="totalM"></span> horas.</p>';
+    }
+    $('informeTexto').innerHTML = h;
+    $('informe').classList.remove('oculto');
+    $('btnCopiar').classList.toggle('oculto', !rep.si);
+
+    document.querySelectorAll('.chkL').forEach(chk => {
+      chk.addEventListener('change', () => {
+        const i = Number(chk.dataset.i);
+        chk.checked ? marcados.add(i) : marcados.delete(i);
+        const sel = document.querySelector('.selH[data-i="' + i + '"]');
+        if (sel) {
+          if (chk.checked) {
+            sel.focus();
+            try { sel.showPicker(); } catch (e) {}
+          } else {
+            sel.value = '0'; horasSel[i] = 0;
+          }
+        }
+        pintarTotal();
+        $('avisoCopia').classList.add('oculto');
+      });
+    });
+    document.querySelectorAll('.selH').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const i = Number(sel.dataset.i), v = Number(sel.value);
+        horasSel[i] = v;
+        const chk = document.querySelector('.chkL[data-i="' + i + '"]');
+        chk.checked = v > 0;
+        v > 0 ? marcados.add(i) : marcados.delete(i);
+        pintarTotal();
+        $('avisoCopia').classList.add('oculto');
+      });
+    });
+    if (rep.si) pintarTotal();
+  }
+
+  function generar() {
+    const s = estado();
+    const err = validar(s);
+    $('avisoCopia').classList.add('oculto');
+    if (err) {
+      $('aviso').textContent = err;
+      $('aviso').classList.remove('oculto');
+      return;
+    }
+    $('aviso').classList.add('oculto');
+    rep = calcular(s);
+    if (rep.si) {
+      const validos = new Set(rep.listL);
+      marcados = new Set([...marcados].filter(i => validos.has(i)));
+    } else {
+      marcados = new Set(); horasSel = {};
+    }
+    pintarInforme();
+    generado = true;
+    $('btnGenerar').textContent = 'Generar informe o correo de reducción de horas no lectivas';
+    $('informe').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // ---------- PDF (en el navegador) ----------
+  function bloquesPdf() {
+    const b = [];
+    b.push({ tipo: 'p', texto: 'De las 330 horas no lectivas, por tu jornada, te corresponde una reducción de ' + fmt(rep.X) +
+      ' horas. De esas horas, ' + fmt(rep.Y) + ' son horas a reducir de las 216 horas de claustros, formaciones y reuniones; ' +
+      'el resto se reducen de preparación y corrección de exámenes.' });
+    const it = i => CONCEPTOS[i].n + ' - ' + CONCEPTOS[i].h + ' h';
+    if (!rep.si) {
+      b.push({ tipo: 'p', texto: 'La dirección te hará una propuesta de los conceptos con los que se reducirá tu jornada.' });
+    } else {
+      b.push({ tipo: 'p', texto: 'Debes responder a la propuesta que te haga dirección aceptándola, o bien, haciéndole una propuesta alternativa.' });
+      b.push({ tipo: 'h', texto: 'Conceptos y horas en los que NO PUEDES APLICAR TU REDUCCIÓN en ningún caso y debes asistir, ' + fmt(rep.J) + ' horas:' });
+      b.push({ tipo: 'ul', items: rep.listJ.length ? rep.listJ.map(it) : ['Ninguno'] });
+      b.push({ tipo: 'h', texto: 'Conceptos y horas en los que APLICAS TU REDUCCIÓN INEVITABLEMENTE y debes no asistir, ' + fmt(rep.K) + ' horas:' });
+      b.push({ tipo: 'ul', items: rep.listK.length ? rep.listK.map(it) : ['Ninguno'] });
+      b.push({ tipo: 'h', texto: 'Conceptos y horas sobre los que puedes ELEGIR APLICAR TU REDUCCIÓN (marcados con [X]):' });
+      b.push({ tipo: 'ul', items: rep.listL.map(i => {
+        const c = CONCEPTOS[i];
+        const extra = (c.sel && marcados.has(i)) ? ' (reducción elegida: ' + (horasSel[i] || 0) + ' h)' : '';
+        return (marcados.has(i) ? '[X] ' : '[  ] ') + it(i) + extra;
+      }) });
+      b.push({ tipo: 'p', texto: 'Puedes reducirte ' + fmt(rep.N) + ' horas de estos conceptos. Con los conceptos que has marcado suman ' + fmt(sumaMarcados()) + ' horas.' });
+    }
+    return b;
+  }
+
+  function descargarPdf() {
+    if (!window.jspdf) { alert('No se pudo cargar la librería del PDF. Comprueba la conexión y recarga la página.'); return; }
+    const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
+    const M = 18, W = 210 - 2 * M, PAGE_H = 297 - M;
+    let y = M;
+
+    const linea = (txt, size, bold, indent, color) => {
+      doc.setFont('helvetica', bold ? 'bold' : 'normal');
+      doc.setFontSize(size);
+      doc.setTextColor(color[0], color[1], color[2]);
+      const lh = size * 0.5;
+      doc.splitTextToSize(txt, W - indent).forEach(l => {
+        if (y + lh > PAGE_H) { doc.addPage(); y = M; }
+        doc.text(l, M + indent, y);
+        y += lh;
+      });
+    };
+
+    linea('Reducción de horas no lectivas', 16, true, 0, [26, 77, 143]);
+    y += 4;
+    bloquesPdf().forEach(b => {
+      if (b.tipo === 'h') { y += 3; linea(b.texto, 11, true, 0, [26, 77, 143]); y += 1.5; }
+      else if (b.tipo === 'p') { linea(b.texto, 10.5, false, 0, [34, 34, 34]); y += 2; }
+      else if (b.tipo === 'ul') {
+        b.items.forEach(t => { linea('- ' + t, 10, false, 3, [34, 34, 34]); y += 0.8; });
+        y += 1.5;
+      }
+    });
+    doc.save('Informe_reduccion_horas_no_lectivas.pdf');
+  }
+
+  // ---------- Correo ----------
+  function textoCorreo() {
+    const it = i => '- ' + CONCEPTOS[i].n + ' (' + horasDe(i) + ' h)';
+    const elegidos = rep.listL.filter(i => marcados.has(i) && horasDe(i) > 0).map(it);
+    const fijos = rep.listK.map(i => '- ' + CONCEPTOS[i].n + ' (' + CONCEPTOS[i].h + ' h)');
+    return 'Dado que mi jornada es de ' + rep.Z + ' horas y es por cuidado de familiar al cargo, me corresponde reducirme de ' +
+      fmt(rep.N) + ' horas de los siguientes conceptos:\n' + elegidos.concat(fijos).join('\n');
+  }
+
+  function copiar() {
+    const txt = textoCorreo();
+    const ok = () => $('avisoCopia').classList.remove('oculto');
+    const fallback = () => {
+      const ta = document.createElement('textarea');
+      ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); ok(); } catch (e) { alert('No se pudo copiar el texto.'); }
+      ta.remove();
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(ok).catch(fallback);
+    } else {
+      fallback();
+    }
+  }
+
+  function reiniciar() {
+    $('p1').value = ''; $('p2').value = ''; $('p4').value = '';
+    document.querySelectorAll('#p3 input').forEach(c => c.checked = false);
+    actualizarVisibilidad();
+    $('informe').classList.add('oculto');
+    $('informeTexto').innerHTML = '';
+    $('aviso').classList.add('oculto');
+    $('avisoCopia').classList.add('oculto');
+    $('btnGenerar').textContent = 'Generar informe o correo de reducción de horas no lectivas';
+    generado = false; rep = null; marcados = new Set(); horasSel = {};
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  $('p1').addEventListener('change', () => { actualizarVisibilidad(); marcarCambio(); });
+  $('p2').addEventListener('change', marcarCambio);
+  $('p4').addEventListener('change', marcarCambio);
+  document.querySelectorAll('#p3 input').forEach(c => c.addEventListener('change', marcarCambio));
+  $('btnGenerar').addEventListener('click', generar);
+  $('btnPdf').addEventListener('click', descargarPdf);
+  $('btnCopiar').addEventListener('click', copiar);
+  $('btnReiniciar').addEventListener('click', reiniciar);
+</script>
+</body>
+</html>
