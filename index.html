@@ -366,7 +366,7 @@ function textoCorreo() {
   const fijos = rep.listK.map(it);
   const elegidos = rep.listL.filter(i => marcados.has(i) && horasDe(i) > 0).map(it);
   return 'Dado que mi jornada es de ' + rep.Z + ' horas y es por cuidado de familiar al cargo, me corresponde reducirme de ' +
-    fmt(rep.X) + ' horas.\n' +
+    fmt(rep.Y) + ' horas.\n' +
     'De éstas, se me reducirán inevitablemente ' + fmt(rep.K) + ' horas de los siguientes conceptos:\n' +
     (fijos.length ? fijos.join('\n') : '- Ninguno') + '\n' +
     'Y elijo que se me reduzcan las ' + fmt(rep.N) + ' horas restantes de los siguientes conceptos:\n' +
