@@ -186,8 +186,8 @@
     const h = Number(s.p2);
     const r = {
       Z: h,
-      X: 330 - 330 * h / 25,
-      Y: 216 - 216 * h / 25,
+      X: 330 - 330 * h / 25, //horas a reducirse en total
+      Y: 216 - 216 * h / 25, //horas a reducirse de claustros, formaciones y reuniones
       si: s.p1 === 'SI', J: 0, K: 0, L: 0, listJ: [], listK: [], listL: []
     };
     if (r.si) {
@@ -290,7 +290,7 @@
       return;
     }
     $('aviso').classList.add('oculto');
-    rep = calcular(s);
+    rep = calcular(s);    alert('X=' + rep.X + ' Y=' + rep.Y);
     if (rep.si) {
       const validos = new Set(rep.listL);
       marcados = new Set([...marcados].filter(i => validos.has(i)));
