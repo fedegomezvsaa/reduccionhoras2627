@@ -306,8 +306,9 @@
   // ---------- PDF (en el navegador) ----------
   function bloquesPdf() {
     const b = [];
-    b.push({ tipo: 'p', texto: 'De las 330 horas no lectivas, por tu jornada, te corresponde una reducción de ' + fmt(rep.X) +
-      ' horas. De esas horas, ' + fmt(rep.Y) + ' son horas a reducir de las 216 horas de claustros, formaciones y reuniones; ' +
+    b.push({ tipo: 'p', texto: 'Según describe la planificación de horas lectivas de 2026-27, las 330 horas de una jornada completa en ESO-BACH se distribuyen en 216 para guardias, reuniones, claustros y formaciones y 114 para preparación de clases y corrección de exámenes. Dado que mi jornada es de ' + rep.Z + ' horas y es por cuidado de familiar al cargo, me corresponde reducirme de ' +
+    fmt(rep.Y) + ' horas de las guardias, reuniones, claustros y formaciones. Por tu jornada, te corresponde una reducción de ' + fmt(rep.X) +
+      ' horas. De esas horas, ' + fmt(rep.Y) + ' son horas a reducir de las 216 horas de guardias, claustros, formaciones y reuniones; ' +
       'el resto se reducen de preparación y corrección de exámenes.' });
     const it = i => CONCEPTOS[i].n + ' - ' + CONCEPTOS[i].h + ' h';
     if (!rep.si) {
@@ -365,8 +366,8 @@ function textoCorreo() {
   const it = i => '- ' + CONCEPTOS[i].n + ' (' + horasDe(i) + ' h)';
   const fijos = rep.listK.map(it);
   const elegidos = rep.listL.filter(i => marcados.has(i) && horasDe(i) > 0).map(it);
-  return 'Dado que mi jornada es de ' + rep.Z + ' horas y es por cuidado de familiar al cargo, me corresponde reducirme de ' +
-    fmt(rep.Y) + ' horas.\n' +
+  return 'Según describe la planificación de horas lectivas de 2026-27, las 330 horas de una jornada completa en ESO-BACH se distribuyen en 216 para guardias, reuniones, claustros y formaciones y 114 para preparación de clases y corrección de exámenes. Dado que mi jornada es de ' + rep.Z + ' horas y es por cuidado de familiar al cargo, me corresponde reducirme de ' +
+    fmt(rep.Y) + ' horas de las guardias, reuniones, claustros y formaciones.\n' +
     'De éstas, se me reducirán inevitablemente ' + fmt(rep.K) + ' horas de los siguientes conceptos:\n' +
     (fijos.length ? fijos.join('\n') : '- Ninguno') + '\n' +
     'Y elijo que se me reduzcan las ' + fmt(rep.N) + ' horas restantes de los siguientes conceptos:\n' +
