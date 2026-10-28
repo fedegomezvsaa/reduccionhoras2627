@@ -219,12 +219,11 @@
 
   function pintarInforme() {
     let h = '';
-    h += '<p>De las 330 horas no lectivas, por tu jornada, te corresponde una reducción de <b>' + fmt(rep.X) +
-         '</b> horas. De esas horas, <b>' + fmt(rep.Y) + '</b> son horas a reducir de las 216 horas de claustros, ' +
-         'formaciones y reuniones; el resto se reducen de preparación y corrección de exámenes.</p>';
+    h += '<p>Según describe la planificación de horas lectivas de 2026-27, las 330 horas de una jornada completa en ESO-BACH se distribuyen en 216 para guardias, reuniones, claustros y formaciones y 114 para preparación de clases y corrección de exámenes.  Por tu jornada, te corresponde una reducción de <b>' + fmt(rep.X) +
+         '</b> horas. De esas horas, <b>' + fmt(rep.Y) + '</b> son horas a reducir de las 216 horas de guardias, reuniones, claustros y formaciones; el resto se reducen de preparación y corrección de exámenes.</p>';
 
     if (!rep.si) {
-      h += '<p>La dirección te hará una propuesta de los conceptos con los que se reducirá tu jornada.</p>';
+      h += '<p>La dirección se ha comprometido a hacerte una propuesta de los conceptos con los que se reducirá tu jornada.</p>';
     } else {
       h += '<p>Debes responder a la propuesta que te haga dirección aceptándola, o bien, haciéndole una propuesta alternativa.</p>';
       h += '<p>Conceptos y horas en los que <b>NO PUEDES APLICAR TU REDUCCIÓN</b> en ningún caso y debes asistir, <b>' + fmt(rep.J) + '</b> horas:</p><ul>' +
