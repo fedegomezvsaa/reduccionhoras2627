@@ -306,15 +306,13 @@
   // ---------- PDF (en el navegador) ----------
   function bloquesPdf() {
     const b = [];
-    b.push({ tipo: 'p', texto: 'Según describe la planificación de horas lectivas de 2026-27, las 330 horas de una jornada completa en ESO-BACH se distribuyen en 216 para guardias, reuniones, claustros y formaciones y 114 para preparación de clases y corrección de exámenes. Dado que mi jornada es de ' + rep.Z + ' horas y es por cuidado de familiar al cargo, me corresponde reducirme de ' +
-    fmt(rep.Y) + ' horas de las guardias, reuniones, claustros y formaciones. Por tu jornada, te corresponde una reducción de ' + fmt(rep.X) +
-      ' horas. De esas horas, ' + fmt(rep.Y) + ' son horas a reducir de las 216 horas de guardias, claustros, formaciones y reuniones; ' +
-      'el resto se reducen de preparación y corrección de exámenes.' });
+    b.push({ tipo: 'p', texto: 'Según describe la planificación de horas lectivas de 2026-27, las 330 horas de una jornada completa en ESO-BACH se distribuyen entre 216 h para guardias, reuniones, claustros y formaciones y 114 h para preparación de clases y corrección de exámenes. 
+      Dado que tu jornada es de ' + rep.Z + ' horas, te corresponde reducirte un total de ' + fmt(rep.X) + ' h, de las cuales ' + fmt(rep.Y) + ' h son de guardias, reuniones, claustros y formaciones. El resto se reducen de preparación y corrección de exámenes.' });
     const it = i => CONCEPTOS[i].n + ' - ' + CONCEPTOS[i].h + ' h';
     if (!rep.si) {
-      b.push({ tipo: 'p', texto: 'La dirección te hará una propuesta de los conceptos con los que se reducirá tu jornada.' });
+      b.push({ tipo: 'p', texto: 'La dirección se ha comprometido a hacerte una propuesta de los conceptos con los que se reducirá tu jornada.' });
     } else {
-      b.push({ tipo: 'p', texto: 'Debes responder a la propuesta que te haga dirección aceptándola, o bien, haciéndole una propuesta alternativa.' });
+      b.push({ tipo: 'p', texto: 'Debes hacer una propuesta a dirección, o bien, responder a la propuesta que se te haga aceptándola o con una alternativa.' });
       b.push({ tipo: 'h', texto: 'Conceptos y horas en los que NO PUEDES APLICAR TU REDUCCIÓN en ningún caso y debes asistir, ' + fmt(rep.J) + ' horas:' });
       b.push({ tipo: 'ul', items: rep.listJ.length ? rep.listJ.map(it) : ['Ninguno'] });
       b.push({ tipo: 'h', texto: 'Conceptos y horas en los que APLICAS TU REDUCCIÓN INEVITABLEMENTE y debes no asistir, ' + fmt(rep.K) + ' horas:' });
